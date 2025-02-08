@@ -1,14 +1,15 @@
 "use client"
 
-const tabs = ["Overview", "Religion", "Economy", "Population", "Myths", "Upcoming Events", "Geopolitics"]
+const tabs = ["Overview", "Economy", "Military", "Agriculture", "Technology"];
 
 interface ResultsSummaryProps {
   selectedTab: string
   setSelectedTab: (tab: string) => void
-  summary: string
+  summaryData: ProcessedTimelineData
+  selectedRegion?: string
 }
 
-export function ResultsSummary({ selectedTab, setSelectedTab, summary }: ResultsSummaryProps) {
+export function ResultsSummary({ selectedTab, setSelectedTab, summaryData, selectedRegion }: ResultsSummaryProps) {
   return (
     <div className="h-1/5 bg-muted p-4 overflow-y-auto">
       <h2 className="text-2xl font-semibold text-white mb-4">Results Summary</h2>
@@ -28,7 +29,25 @@ export function ResultsSummary({ selectedTab, setSelectedTab, summary }: Results
         ))}
       </nav>
       <div className="text-gray-300">
-        {summary || "This is where the summary of the alternate timeline results would be displayed."}
+        {selectedRegion ? (
+          <>
+            <h3 className="text-lg font-semibold mb-2">{selectedRegion} - {selectedTab}</h3>
+            <p>{summaryData.content[selectedTab]?.[selectedRegion]?.text || "No regional data"}</p>
+            {selectedTab !== "Future Events" && (
+              <div className="mt-2 text-sm text-accent">
+                {selectedTab} Score: {summaryData.content[selectedTab]?.[selectedRegion]?.score || 0}
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="space-y-2">
+            <h3 className="text-lg font-semibold">Global {selectedTab}</h3>
+            <p>{summaryData.content[selectedTab]?.global?.text || "Select a region to view details"}</p>
+            <div className="mt-2 text-sm text-accent">
+              Global Score: {summaryData.content[selectedTab]?.Global?.score || 0}%
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

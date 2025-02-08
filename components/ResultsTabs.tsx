@@ -9,13 +9,10 @@ import { api, type TabContent } from "@/lib/api"
 
 const TABS = [
   "Overview",
-  "Religion",
-  "Economy",
-  "Population",
-  "Myths",
-  "Upcoming Events",
-  "Geopolitics",
-  "Environment",
+  "Economy", 
+  "Military",
+  "Agriculture",
+  "Technology"
 ] as const
 
 interface ResultsTabsProps {
@@ -49,9 +46,12 @@ export function ResultsTabs({ selectedRegion, currentYear, currentQuery, onScore
 
   const getContent = (tab: string): TabContent => {
     const tabContent = content[tab as keyof typeof content] || {}
-    return selectedRegion && tab in tabContent
-      ? tabContent[selectedRegion as keyof typeof tabContent]
-      : tabContent.default || tabContent.global || { text: "Loading...", score: 0 }
+    
+    if (!selectedRegion) {
+      return tabContent.Global || { text: "Global data not available", score: 0 }
+    }
+    
+    return tabContent[selectedRegion] || { text: "No regional data available", score: 0 }
   }
 
   return (
@@ -79,23 +79,28 @@ export function ResultsTabs({ selectedRegion, currentYear, currentQuery, onScore
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3 }}
                   >
-                    {isLoading ? <div className="h-20 bg-white/5 animate-pulse rounded" /> : getContent(tab).text}
+                    {isLoading ? (
+                      <div className="h-20 bg-white/5 animate-pulse rounded" />
+                    ) : (
+                      <div className="whitespace-pre-line">
+                        {getContent(tab).text}
+                      </div>
+                    )}
                   </motion.div>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-white/60">Timeline Score</span>
-                      <motion.span
-                        key={getContent(tab).score}
-                        className="text-sm font-medium bg-gradient-to-r from-blue-400 to-blue-300 bg-clip-text text-transparent"
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                      >
-                        {isLoading ? "-" : `${getContent(tab).score}%`}
-                      </motion.span>
+                  {tab !== "Future Events" && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-white/60">Timeline Score</span>
+                        <motion.span
+                          key={getContent(tab).score}
+                          className="text-sm font-medium bg-gradient-to-r from-blue-400 to-blue-300 bg-clip-text text-transparent"
+                        >
+                          {selectedRegion ? `${getContent(tab).score}%` : `Global Score: ${getContent(tab).score}%`}
+                        </motion.span>
+                      </div>
+                      <Progress value={getContent(tab).score} className="h-1.5" />
                     </div>
-                    <Progress value={isLoading ? 0 : getContent(tab).score} className="h-1.5" />
-                  </div>
+                  )}
                 </div>
               </ScrollArea>
             </TabsContent>
