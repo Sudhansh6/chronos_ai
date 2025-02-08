@@ -219,9 +219,10 @@ def generate_agent_identity(region: str, year: str) -> dict:
 
 # New function to build the Chat Agent chain.
 def build_chat_agent_chain(chat_flag: bool):
+    global STATEFUL_CHAT_AGENT_CHAIN
     if not chat_flag or STATEFUL_CHAT_AGENT_CHAIN is None:
         llm = ChatOpenAI(temperature=TEMPERATURE, model_name=MODEL_NAME)
-        memory = ConversationBufferMemory(memory_key="history", return_messages=True)
+        # memory = ConversationBufferMemory(memory_key="history", return_messages=True)
         # Import the new chat agent prompt template
         chat_template = PromptTemplate(
             input_variables=["year", 
@@ -236,7 +237,8 @@ def build_chat_agent_chain(chat_flag: bool):
         chat_chain = LLMChain(llm=llm, 
                             prompt=chat_template, 
                             output_key="chat_response",
-                            memory=memory)
+                            # memory=memory
+                            )
         STATEFUL_CHAT_AGENT_CHAIN = chat_chain
     else:
         chat_chain = STATEFUL_CHAT_AGENT_CHAIN
@@ -286,8 +288,10 @@ def get_events_by_year(year: str) -> Dict[str, Any]:
         raise ValueError("No future events found in the simulation result.")
     events_by_region = {}
     for event in events:
+        print(">>>>>>>>>>event: ", event)
+        event = json.loads(event)
         region = event.get("location", "Unknown")
-        events_by_region.setdefault(region, []).append(event)
+        events_by_region.setdefault(region, []).append(event["event_description"])
     return events_by_region
 
 def get_quantities_by_year_and_region(year: str, region: str) -> Dict[str, Any]:
