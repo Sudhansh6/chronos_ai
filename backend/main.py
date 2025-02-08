@@ -5,6 +5,7 @@ from pydantic import BaseModel
 import random
 from datetime import datetime
 from mockdata import MOCK_DATA
+# from backend_main import BackendMain
 
 app = FastAPI()
 
@@ -15,6 +16,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# backend = BackendMain()
 
 # Mock data structures
 class TimelineResponse(BaseModel):
@@ -55,7 +58,7 @@ async def get_timeline_data(
     query: str = Query(...)
 ):
     # Return mock data with region filtering
-    print(year, query)
+    # data = backend.simulate_year(year=year, user_decision=query)
     return MOCK_DATA
 
 @app.post("/api/chat")

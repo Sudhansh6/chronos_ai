@@ -1,4 +1,4 @@
-from backend.langchain_chains.chains import run_simulation, get_quantities_by_year_and_region, chat_with_user, get_events_by_year
+from langchain_chains.chains import run_simulation
 
 class BackendMain:
     def __init__(self):
