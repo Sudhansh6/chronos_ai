@@ -1,4 +1,4 @@
-from backend.langchain_chains.chains import run_simulation
+from langchain_chains.chains import run_simulation
 
 class BackendMain:
     def __init__(self):

@@ -14,7 +14,7 @@ MOCK_DATA = {
         "Successful revolutionary outcomes in colonized countries..."
     ],
     "future_events": [
-        {"time": "1912", "location": "global", "event_description": "The outbreak of a major conflict..."},
+        {"time": "1912", "location": "Global", "event_description": "The outbreak of a major conflict..."},
         {"time": "1915", "location": "Europe", "event_description": "The outbreak of a major conflict..."},
         {"time": "1912", "location": "North America", "event_description": "A significant labor strike..."},
         {"time": "1913", "location": "Asia", "event_description": "The rise of anti-colonial sentiments..."},

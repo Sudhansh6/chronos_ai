@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, type React } from "react"
+import { useState, useEffect, type React, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Search, Globe } from "lucide-react"
 import { api } from "@/lib/api"
@@ -11,22 +11,44 @@ export function SearchBar() {
   const [suggestions, setSuggestions] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
+  const abortControllerRef = useRef<AbortController>()
 
   useEffect(() => {
     const fetchSuggestions = async () => {
       try {
         setIsLoading(true)
-        const data = await api.getTimelineSuggestions(query)
+        
+        // Cancel previous request
+        if (abortControllerRef.current) {
+          abortControllerRef.current.abort()
+        }
+        abortControllerRef.current = new AbortController()
+
+        const data = await api.getTimelineSuggestions(query, {
+          signal: abortControllerRef.current.signal
+        })
         setSuggestions(data)
       } catch (error) {
-        console.error("Error fetching suggestions:", error)
+        if (error.name !== 'AbortError') {
+          console.error("Error fetching suggestions:", error)
+        }
       } finally {
         setIsLoading(false)
       }
     }
 
-    const debounce = setTimeout(fetchSuggestions, 300)
-    return () => clearTimeout(debounce)
+    // Only fetch if query has changed and not empty
+    if (query.trim()) {
+      const debounce = setTimeout(fetchSuggestions, 300)
+      return () => {
+        clearTimeout(debounce)
+        if (abortControllerRef.current) {
+          abortControllerRef.current.abort()
+        }
+      }
+    } else {
+      setSuggestions([])
+    }
   }, [query])
 
   const handleSearch = (e?: React.FormEvent) => {
