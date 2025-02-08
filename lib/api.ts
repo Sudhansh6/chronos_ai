@@ -22,11 +22,10 @@ export interface RegionData {
 export interface TimelineData {
   global_story: Record<string, string>;
   chain_of_thought: string[];
-  future_events: Array<{
+  future_events: Record<string, Array<{
     time: string;
-    location: string;
     event_description: string;
-  }>;
+  }>>;
   regional_quantities: Record<string, Record<string, number>>;
 }
 
@@ -55,13 +54,6 @@ class ApiService {
       );
       const data: TimelineData = await response.json();
 
-      // Process future events by region
-      const futureEventsByRegion = data.future_events.reduce((acc, event) => {
-        if (!acc[event.location]) acc[event.location] = [];
-        acc[event.location].push(event);
-        return acc;
-      }, {} as Record<string, typeof data.future_events>);
-
       const processedData: ProcessedTimelineData = {
         content: {
           "Overview": Object.entries(data.global_story).reduce((acc, [region, text]) => {
@@ -77,20 +69,20 @@ class ApiService {
           "Agriculture": this.processCategory(data.regional_quantities, 'agriculture', this.getAgricultureDescription),
           "Technology": this.processCategory(data.regional_quantities, 'technology', this.getTechDescription),
           
-          "Future Events": Object.entries(futureEventsByRegion).reduce((acc, [region, events]) => {
-            acc[region] = {
-              text: events.map(e => `${e.time}: ${e.event_description}`).join('\n'),
-              score: 0
-            };
-            return acc;
-          }, {} as Record<string, RegionData>)
+          // "Future Events": Object.entries(data.future_events).reduce((acc, [region, events]) => {
+          //   acc[region] = {
+          //     text: events.map(e => `${e.time}: ${e.event_description}`).join('\n'),
+          //     score: 0
+          //   };
+            // return acc;
+          // }, {} as Record<string, RegionData>)
         },
         totalScore: Object.values(data.regional_quantities).reduce((total, region) => {
           const regionTotal = Object.values(region).reduce((sum, val) => sum + val, 0);
           return total + (regionTotal / Object.values(region).length);
         }, 0) / Object.keys(data.regional_quantities).length
       };
-      console.log(processedData);
+      console.log("data", processedData);
       return processedData;
     } catch (error) {
       console.error("Error fetching timeline data:", error);

@@ -289,7 +289,7 @@ def get_events_by_year(year: str) -> Dict[str, Any]:
     events_by_region = {}
     for event in events:
         print(">>>>>>>>>>event: ", event)
-        event = json.loads(event)
+        # event = json.loads(event)
         region = event.get("location", "Unknown")
         events_by_region.setdefault(region, []).append(event["event_description"])
     return events_by_region

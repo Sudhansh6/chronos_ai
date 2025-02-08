@@ -1,4 +1,4 @@
-from langchain_chains.chains import run_simulation
+from langchain_chains.chains import run_simulation, get_events_by_year, get_quantities_by_year_and_region, chat_with_user
 
 class BackendMain:
     def __init__(self):
@@ -25,7 +25,7 @@ class BackendMain:
                 print("Error parsing JSON output:", e)
                 print(simulation_result)
         
-        simulation_result["future_events"] = get_events_by_year(year)
+        # simulation_result["future_events"] = get_events_by_year(year)
 
         self.history_dict[year] = simulation_result
         return simulation_result

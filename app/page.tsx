@@ -1,6 +1,21 @@
 import { SearchBar } from "../components/SearchBar"
+import { TimelineOverlay } from "../components/TimelineOverlay"
+import { ResultsSummary } from "../components/ResultsSummary"
+import { useState } from "react"
+import { Timeline } from "@/types"
+import { ProcessedTimelineData } from "@/types"
 
-export default function Home() {
+export default function HomePage() {
+  const [summaryData, setSummaryData] = useState<ProcessedTimelineData>()
+  const [currentTimeline, setCurrentTimeline] = useState<Timeline>({
+    year: 1800,
+    query: ""
+  })
+
+  const handleTimelineUpdate = async (data: ProcessedTimelineData) => {
+    setSummaryData(data)
+  }
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-8 bg-[rgb(var(--background))]">
       <div className="w-full max-w-2xl">
@@ -12,6 +27,15 @@ export default function Home() {
           Choose a pivotal moment in history and see how the world would evolve
         </p>
         <SearchBar />
+        <TimelineOverlay
+          currentYear={currentTimeline.year}
+          currentQuery={currentTimeline.query}
+          onNewBranch={(year, query) => setCurrentTimeline({ year, query })}
+          onTimelineUpdate={handleTimelineUpdate}
+        />
+        <ResultsSummary 
+          summaryData={summaryData}
+        />
       </div>
     </main>
   )

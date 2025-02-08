@@ -2,6 +2,7 @@
 
 import React from "react"
 import { ArrowLeft, Clock } from "lucide-react"
+import { api } from "@/lib/api"
 
 interface TimelineOverlayProps {
   currentYear: number
@@ -9,6 +10,7 @@ interface TimelineOverlayProps {
   onNewBranch: (year: number, query: string) => void
   onBacktrack: () => void
   previousTimelines: Array<{ year: number; query: string }>
+  onTimelineUpdate: (data: ProcessedTimelineData) => void
 }
 
 export function TimelineOverlay({
@@ -17,17 +19,25 @@ export function TimelineOverlay({
   onNewBranch,
   onBacktrack,
   previousTimelines,
+  onTimelineUpdate,
 }: TimelineOverlayProps) {
   const [year, setYear] = React.useState<number>(currentYear + 1)
   const [query, setQuery] = React.useState("")
   const [isExpanded, setIsExpanded] = React.useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (query.trim() && year > currentYear) {
-      onNewBranch(year, query)
-      setQuery("")
-      setIsExpanded(false)
+      try {
+        const newTimeline = { year, query }
+        const data = await api.getTimelineData(newTimeline)
+        onNewBranch(year, query)
+        onTimelineUpdate(data)
+        setQuery("")
+        setIsExpanded(false)
+      } catch (error) {
+        console.error("Failed to update timeline:", error)
+      }
     }
   }
 
