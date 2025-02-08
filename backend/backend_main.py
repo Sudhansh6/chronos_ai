@@ -1,4 +1,4 @@
-from langchain_chains.chains import run_simulation
+from backend.langchain_chains.chains import run_simulation, get_quantities_by_year_and_region, chat_with_user, get_events_by_year
 
 class BackendMain:
     def __init__(self):
@@ -51,8 +51,3 @@ class BackendMain:
             chat_response = chat_with_user(self.year, reg, chat_message, regional_context, chat_flag)
             chat_flag = True
             return chat_response
-
-
-    
-    
-    
