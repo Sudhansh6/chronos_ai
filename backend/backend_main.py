@@ -25,6 +25,7 @@ class BackendMain:
                 print("Error parsing JSON output:", e)
                 print(simulation_result)
         
+        
         simulation_result["future_events"] = get_events_by_year(year)
 
         self.history_dict[year] = simulation_result
@@ -50,6 +51,7 @@ class BackendMain:
             chat_response = chat_with_user(self.year, reg, chat_message, regional_context, chat_flag)
             chat_flag = True
             return chat_response
+
 
     
     

@@ -149,6 +149,7 @@ def run_simulation(
     global LATEST_SIMULATION_RESULT
     # LATEST_SIMULATION_RESULT = final_output
     final_output = result["simulation_output"]
+    print(">>>>>>>>>>final_output: ", final_output)
     LATEST_SIMULATION_RESULT = final_output
 
     return {
@@ -283,13 +284,13 @@ def get_events_by_year(year: str) -> Dict[str, Any]:
     """
     if not LATEST_SIMULATION_RESULT:
         raise ValueError("No simulation result available. Run simulation first.")
-    events = LATEST_SIMULATION_RESULT.get("future_events")
+    print(">>>>>>>>>>LATEST_SIMULATION_RESULT: ", LATEST_SIMULATION_RESULT)
+    events = json.loads(LATEST_SIMULATION_RESULT).get("future_events")
     if not events:
         raise ValueError("No future events found in the simulation result.")
     events_by_region = {}
     for event in events:
-        print(">>>>>>>>>>event: ", event)
-        event = json.loads(event)
+        # event = json.loads(event)
         region = event.get("location", "Unknown")
         events_by_region.setdefault(region, []).append(event["event_description"])
     return events_by_region
