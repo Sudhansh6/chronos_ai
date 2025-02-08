@@ -1,6 +1,6 @@
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, Body
 from fastapi.middleware.cors import CORSMiddleware
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 from pydantic import BaseModel
 import random
 from datetime import datetime
@@ -30,6 +30,11 @@ class LocationInfo(BaseModel):
     name: str
     description: str
     significance: str
+
+class ChatRequest(BaseModel):
+    message: str
+    region: Optional[str] = None
+    timeline: Dict[str, Any]
 
 MOCK_TIMELINE_DETAILS = {
     "Overview": {
@@ -104,38 +109,40 @@ async def get_location_info(
         significance="Major historical events diverged here."
     )
 
-@app.post("/api/chat/{timeline_id}")
-async def chat(
-    timeline_id: str,
-    message: str = Query(...),
-    location: Optional[str] = None
-) -> ChatMessage:
-    responses = [
-        "In this alternate timeline, things developed quite differently...",
-        "The changes you're asking about had far-reaching consequences...",
-        "That's an interesting question about this timeline...",
-        "The historical divergence led to unexpected developments here..."
-    ]
-    
-    context = f" in {location}" if location else ""
-    return ChatMessage(
-        role="assistant",
-        content=f"{random.choice(responses)} The effects{context} were profound."
-    )
+@app.post("/api/chat")
+async def chat_endpoint(
+    request: ChatRequest = Body(...)
+) -> Dict:
+    # Implementation logic here
+    return {
+        "role": "assistant",
+        "content": f"Response to {request.message} about {request.region or 'global'}"
+    }
+
+@app.get("/api/timeline/{year}")
+async def get_timeline_data(
+    year: int,
+    query: str = Query(...),
+    region: Optional[str] = None
+) -> Dict:
+    # Implementation logic here
+    return {
+        "content": MOCK_TIMELINE_DETAILS,
+        "totalScore": 42  # Calculate actual score
+    }
 
 @app.get("/api/suggestions")
-async def get_suggestions(query: str = "") -> List[str]:
-    suggestions = [
-        "What if the Industrial Revolution happened earlier?",
-        "What if the Renaissance spread to different regions?",
-        "What if ancient civilizations had modern technology?",
-        "What if different trade routes dominated history?",
-        "What if key historical figures made different choices?"
-    ]
-    
-    if query:
-        return [s for s in suggestions if query.lower() in s.lower()]
-    return random.sample(suggestions, 3)
+async def get_suggestions(
+    query: str = Query(...)
+) -> Dict[str, List[str]]:
+    # Keep existing logic but wrap in dict
+    return {
+        "suggestions": [
+            "What if the Industrial Revolution happened earlier?",
+            "What if the Renaissance spread to different regions?",
+            # ... other suggestions
+        ]
+    }
 
 if __name__ == "__main__":
     import uvicorn

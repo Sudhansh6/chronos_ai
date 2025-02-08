@@ -2,7 +2,7 @@ import { MOCK_CONTENT } from "@/lib/mock-data"
 
 const MOCK_API_DELAY = 800 // Simulate network delay
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api"
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
 
 export interface Timeline {
   year: number
@@ -76,8 +76,8 @@ class ApiService {
   async getTimelineSuggestions(query: string): Promise<string[]> {
     try {
       // In production, this would be:
-      // const response = await fetch(`${API_BASE_URL}/suggestions?query=${query}`)
-      // return response.json()
+      const response = await fetch(`${API_BASE_URL}/suggestions?query=${query}`)
+      return response.json()
 
       const suggestions = [
         "What if the Industrial Revolution happened earlier?",
