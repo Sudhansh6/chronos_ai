@@ -1,4 +1,6 @@
-import { MOCK_CONTENT } from "@/lib/mock-data"
+import { MOCK_DATA2 } from "../backend_ts/mockData"
+import { Backend } from "../backend_ts/backendMain";
+const backend = new Backend();
 
 const MOCK_API_DELAY = 800 // Simulate network delay
 
@@ -22,10 +24,11 @@ export interface RegionData {
 export interface TimelineData {
   global_story: Record<string, string>;
   chain_of_thought: string[];
-  future_events: Record<string, Array<{
+  future_events: Array<{  // Changed to array format
     time: string;
+    location: string;
     event_description: string;
-  }>>;
+  }>;
   regional_quantities: Record<string, Record<string, number>>;
 }
 
@@ -34,7 +37,7 @@ export interface ProcessedTimelineData {
   totalScore: number;
 }
 
-class ApiService {
+export class ApiService {
   private async mockFetch<T>(data: T): Promise<T> {
     await new Promise((resolve) => setTimeout(resolve, MOCK_API_DELAY))
     return data
@@ -42,79 +45,76 @@ class ApiService {
 
   async getTimelineData(timeline: Timeline): Promise<ProcessedTimelineData> {
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/timeline/${timeline.year}?query=${encodeURIComponent(timeline.query)}`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include'  // Keep this for all authenticated requests
+      // Temporary mock implementation
+      const result = MOCK_DATA2;
+      
+      // Normalize region names
+      const normalizeRegion = (region: string) => 
+        region.toLowerCase() === 'global' ? 'Global' : 
+        region.charAt(0).toUpperCase() + region.slice(1).toLowerCase();
+
+      // Process future events
+      const futureEvents = result.future_events.reduce((acc, event) => {
+        const region = normalizeRegion(event.location);
+        if (!acc[region]) {
+          acc[region] = [];
         }
-      );
-      const data: TimelineData = await response.json();
+        acc[region].push(`${event.time}: ${event.event_description}`);
+        return acc;
+      }, {} as Record<string, string[]>);
+
+      // Then process as before
+      const processedFutureEvents = Object.entries(futureEvents).reduce((acc, [region, events]) => {
+        acc[normalizeRegion(region)] = {
+          text: events.join('\n'),
+          score: 0
+        };
+        return acc;
+      }, {} as Record<string, RegionData>);
+
+      // Process regional quantities (handle GLOBAL case)
+      const regionalQuantities = Object.entries(result.regional_quantities).reduce((acc, [region, scores]) => {
+        const normalized = region === "GLOBAL" ? "Global" : normalizeRegion(region);
+        acc[normalized] = scores;
+        return acc;
+      }, {} as Record<string, Record<string, number>>);
 
       const processedData: ProcessedTimelineData = {
         content: {
-          "Overview": Object.entries(data.global_story).reduce((acc, [region, text]) => {
-            acc[region] = {
-              text: text,
-              score: Math.round(Object.values(data.regional_quantities[region]).reduce((a, b) => a + b, 0) / 4)
+          "Overview": Object.entries(result.global_story).reduce((acc, [region, text]) => {
+            acc[normalizeRegion(region)] = {
+              text,
+              score: Math.round(Object.values(regionalQuantities[normalizeRegion(region)] || {}).reduce((a, b) => a + b, 0) / 4)
             };
             return acc;
           }, {} as Record<string, RegionData>),
           
-          "Economy": this.processCategory(data.regional_quantities, 'economy', this.getEconomicDescription),
-          "Military": this.processCategory(data.regional_quantities, 'military', this.getMilitaryDescription),
-          "Agriculture": this.processCategory(data.regional_quantities, 'agriculture', this.getAgricultureDescription),
-          "Technology": this.processCategory(data.regional_quantities, 'technology', this.getTechDescription),
-          
-          // "Future Events": Object.entries(data.future_events).reduce((acc, [region, events]) => {
-          //   acc[region] = {
-          //     text: events.map(e => `${e.time}: ${e.event_description}`).join('\n'),
-          //     score: 0
-          //   };
-            // return acc;
-          // }, {} as Record<string, RegionData>)
+          "Economy": this.processCategory(regionalQuantities, 'economy', this.getEconomicDescription),
+          "Military": this.processCategory(regionalQuantities, 'military', this.getMilitaryDescription),
+          "Agriculture": this.processCategory(regionalQuantities, 'agriculture', this.getAgricultureDescription),
+          "Technology": this.processCategory(regionalQuantities, 'technology', this.getTechDescription),
+          "Future Events": processedFutureEvents
         },
-        totalScore: Object.values(data.regional_quantities).reduce((total, region) => {
+        totalScore: Object.values(regionalQuantities).reduce((total, region) => {
           const regionTotal = Object.values(region).reduce((sum, val) => sum + val, 0);
           return total + (regionTotal / Object.values(region).length);
-        }, 0) / Object.keys(data.regional_quantities).length
+        }, 0) / Object.keys(regionalQuantities).length
       };
-      console.log("data", processedData);
+
+      console.log("Using MOCK_DATA2:", processedData);
       return processedData;
     } catch (error) {
-      console.error("Error fetching timeline data:", error);
-      throw new Error("Failed to fetch timeline data");
+      console.error("Error processing mock data:", error);
+      return this.mockFetch(MOCK_DATA2); // Fallback to raw mock data
     }
   }
 
   async getChatResponse(message: string, region: string | null, timeline: Timeline): Promise<string> {
     try {
-      // In production, this would be:
-      // const response = await fetch(`${API_BASE_URL}/chat`, {
-      //   method: 'POST',
-      //   body: JSON.stringify({ message, region, timeline })
-      // })
-      // return response.json()
-
-      const responses = region
-        ? [
-            `In ${region}, during ${timeline.year}, ${message}`,
-            `The alternate timeline shows significant changes in ${region}...`,
-            `${region}'s development took a fascinating turn in ${timeline.year}...`,
-          ]
-        : [
-            `In this global timeline of ${timeline.year}, ${message}`,
-            `The world evolved differently when ${timeline.query}...`,
-            `This alternate path led to fascinating changes...`,
-          ]
-
-      return this.mockFetch(responses[Math.floor(Math.random() * responses.length)])
+      return await backend.chatWithAgent(region || "Global", message);
     } catch (error) {
-      console.error("Error fetching chat response:", error)
-      throw new Error("Failed to fetch chat response")
+      console.error("Error fetching chat response:", error);
+      throw new Error("Failed to fetch chat response");
     }
   }
 

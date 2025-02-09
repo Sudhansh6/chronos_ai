@@ -4,7 +4,7 @@ from typing import List, Dict, Optional, Any
 from pydantic import BaseModel
 import random
 from datetime import datetime
-from mockdata import MOCK_DATA
+from mockdata import MOCK_DATA, MOCK_DATA2
 from backend_main import BackendMain
 
 app = FastAPI()
@@ -58,12 +58,13 @@ async def get_timeline_data(
     year: int,
     query: str = Query(...)
 ):
-    # Return mock data with region filtering
-    # if res.get((year, query), None):
-    #     return res[(year, query)]
+    if res.get((year, query), None):
+        print("Sending from cache")
+        return res[(year, query)]
     # data = backend.simulate_year(year=year, user_decision=query)
-    # print(data)
-    return MOCK_DATA
+    # print("returning", data)
+    # return data 
+    return MOCK_DATA2
 
 @app.post("/api/chat")
 async def chat_endpoint(

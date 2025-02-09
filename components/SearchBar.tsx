@@ -64,7 +64,7 @@ export function SearchBar() {
     document.body.appendChild(ripple)
 
     const rect = event.currentTarget.getBoundingClientRect()
-    const size = 100
+    const size = 1000
     ripple.style.width = ripple.style.height = `${size}px`
     ripple.style.left = `${event.clientX - size / 2}px`
     ripple.style.top = `${event.clientY - size / 2}px`
@@ -77,7 +77,6 @@ export function SearchBar() {
   const handleYearChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newYear = Number.parseInt(e.target.value)
     setPivotalYear(newYear)
-    createRipple(e as unknown as React.MouseEvent<HTMLInputElement>)
   }
 
   const handleMouseMove = (e: React.MouseEvent<HTMLInputElement>) => {

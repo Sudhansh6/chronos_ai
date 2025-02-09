@@ -1,9 +1,13 @@
+"use client"
+
 import { SearchBar } from "../components/SearchBar"
 import { TimelineOverlay } from "../components/TimelineOverlay"
 import { ResultsSummary } from "../components/ResultsSummary"
 import { useState } from "react"
 import { Timeline } from "@/types"
 import { ProcessedTimelineData } from "@/types"
+import { ChatWindow } from "../components/ChatWindow"
+import { Chat } from "../components/Chat"
 
 export default function HomePage() {
   const [summaryData, setSummaryData] = useState<ProcessedTimelineData>()
@@ -27,15 +31,6 @@ export default function HomePage() {
           Choose a pivotal moment in history and see how the world would evolve
         </p>
         <SearchBar />
-        <TimelineOverlay
-          currentYear={currentTimeline.year}
-          currentQuery={currentTimeline.query}
-          onNewBranch={(year, query) => setCurrentTimeline({ year, query })}
-          onTimelineUpdate={handleTimelineUpdate}
-        />
-        <ResultsSummary 
-          summaryData={summaryData}
-        />
       </div>
     </main>
   )

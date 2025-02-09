@@ -9,7 +9,7 @@ interface TimelineOverlayProps {
   currentQuery: string
   onNewBranch: (year: number, query: string) => void
   onBacktrack: () => void
-  previousTimelines: Array<{ year: number; query: string }>
+  previousTimelines?: Array<{ year: number; query: string }>
   onTimelineUpdate: (data: ProcessedTimelineData) => void
 }
 
@@ -18,7 +18,7 @@ export function TimelineOverlay({
   currentQuery,
   onNewBranch,
   onBacktrack,
-  previousTimelines,
+  previousTimelines = [],
   onTimelineUpdate,
 }: TimelineOverlayProps) {
   const [year, setYear] = React.useState<number>(currentYear + 1)
@@ -52,7 +52,7 @@ export function TimelineOverlay({
             <Clock size={16} />
             <span>Modify Timeline</span>
           </button>
-          {previousTimelines.length > 0 && (
+          {previousTimelines?.length > 0 && (
             <button onClick={onBacktrack} className="text-white/80 hover:text-white flex items-center gap-2">
               <ArrowLeft size={16} />
               <span>Previous Timeline</span>
