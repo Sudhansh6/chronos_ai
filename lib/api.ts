@@ -43,69 +43,71 @@ export class ApiService {
     return data
   }
 
+  private processTimelineData(result: any): ProcessedTimelineData {
+    const normalizeRegion = (region: string) => 
+      region.toLowerCase() === 'global' ? 'Global' : 
+      region.charAt(0).toUpperCase() + region.slice(1).toLowerCase();
+
+    // Process future events
+    const futureEvents = result.future_events.reduce((acc, event) => {
+      const region = normalizeRegion(event.location);
+      acc[region] = acc[region] || [];
+      acc[region].push(`${event.time}: ${event.event_description}`);
+      return acc;
+    }, {} as Record<string, string[]>);
+
+    const processedFutureEvents = Object.entries(futureEvents).reduce((acc, [region, events]) => {
+      acc[normalizeRegion(region)] = {
+        text: events.join('\n'),
+        score: 0
+      };
+      return acc;
+    }, {} as Record<string, RegionData>);
+
+    // Process regional quantities
+    const regionalQuantities = Object.entries(result.regional_quantities).reduce((acc, [region, scores]) => {
+      const normalized = region === "GLOBAL" ? "Global" : normalizeRegion(region);
+      acc[normalized] = scores as Record<string, number>;
+      return acc;
+    }, {} as Record<string, Record<string, number>>);
+
+    // Calculate scores
+    return {
+      content: {
+        "Overview": Object.entries(result.global_story).reduce((acc, [region, text]) => {
+          acc[normalizeRegion(region)] = {
+            text: text as string,
+            score: Math.round(Object.values(regionalQuantities[normalizeRegion(region)] || {}).reduce((a, b) => a + b, 0) / 4)
+          };
+          return acc;
+        }, {} as Record<string, RegionData>),
+        "Economy": this.processCategory(regionalQuantities, 'economy', this.getEconomicDescription),
+        "Military": this.processCategory(regionalQuantities, 'military', this.getMilitaryDescription),
+        "Agriculture": this.processCategory(regionalQuantities, 'agriculture', this.getAgricultureDescription),
+        "Technology": this.processCategory(regionalQuantities, 'technology', this.getTechDescription),
+        "Future Events": processedFutureEvents
+      },
+      totalScore: Object.values(regionalQuantities).reduce((total, region) => {
+        const regionTotal = Object.values(region).reduce((sum, val) => sum + val, 0);
+        return total + (regionTotal / Object.values(region).length);
+      }, 0) / Object.keys(regionalQuantities).length
+    };
+  }
+
   async getTimelineData(timeline: Timeline): Promise<ProcessedTimelineData> {
     try {
-      // Temporary mock implementation
-      const result = MOCK_DATA2;
+      const result = await backend.simulateYear(
+        timeline.year.toString(),
+        undefined,
+        timeline.query
+      );
       
-      // Normalize region names
-      const normalizeRegion = (region: string) => 
-        region.toLowerCase() === 'global' ? 'Global' : 
-        region.charAt(0).toUpperCase() + region.slice(1).toLowerCase();
-
-      // Process future events
-      const futureEvents = result.future_events.reduce((acc, event) => {
-        const region = normalizeRegion(event.location);
-        if (!acc[region]) {
-          acc[region] = [];
-        }
-        acc[region].push(`${event.time}: ${event.event_description}`);
-        return acc;
-      }, {} as Record<string, string[]>);
-
-      // Then process as before
-      const processedFutureEvents = Object.entries(futureEvents).reduce((acc, [region, events]) => {
-        acc[normalizeRegion(region)] = {
-          text: events.join('\n'),
-          score: 0
-        };
-        return acc;
-      }, {} as Record<string, RegionData>);
-
-      // Process regional quantities (handle GLOBAL case)
-      const regionalQuantities = Object.entries(result.regional_quantities).reduce((acc, [region, scores]) => {
-        const normalized = region === "GLOBAL" ? "Global" : normalizeRegion(region);
-        acc[normalized] = scores;
-        return acc;
-      }, {} as Record<string, Record<string, number>>);
-
-      const processedData: ProcessedTimelineData = {
-        content: {
-          "Overview": Object.entries(result.global_story).reduce((acc, [region, text]) => {
-            acc[normalizeRegion(region)] = {
-              text,
-              score: Math.round(Object.values(regionalQuantities[normalizeRegion(region)] || {}).reduce((a, b) => a + b, 0) / 4)
-            };
-            return acc;
-          }, {} as Record<string, RegionData>),
-          
-          "Economy": this.processCategory(regionalQuantities, 'economy', this.getEconomicDescription),
-          "Military": this.processCategory(regionalQuantities, 'military', this.getMilitaryDescription),
-          "Agriculture": this.processCategory(regionalQuantities, 'agriculture', this.getAgricultureDescription),
-          "Technology": this.processCategory(regionalQuantities, 'technology', this.getTechDescription),
-          "Future Events": processedFutureEvents
-        },
-        totalScore: Object.values(regionalQuantities).reduce((total, region) => {
-          const regionTotal = Object.values(region).reduce((sum, val) => sum + val, 0);
-          return total + (regionTotal / Object.values(region).length);
-        }, 0) / Object.keys(regionalQuantities).length
-      };
-
-      console.log("Using MOCK_DATA2:", processedData);
+      const processedData = this.processTimelineData(result);
+      console.log("Processed timeline data:", processedData);
       return processedData;
     } catch (error) {
-      console.error("Error processing mock data:", error);
-      return this.mockFetch(MOCK_DATA2); // Fallback to raw mock data
+      console.error("Error processing timeline data:", error);
+      return this.processTimelineData(MOCK_DATA2);
     }
   }
 

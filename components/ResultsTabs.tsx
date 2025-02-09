@@ -22,9 +22,21 @@ interface ResultsTabsProps {
   onScoreUpdate: (score: number) => void
 }
 
+interface TabData {
+  [key: string]: {
+    Global?: TabContent
+    [region: string]: TabContent | undefined
+  }
+}
+
 export function ResultsTabs({ selectedRegion, currentYear, currentQuery, onScoreUpdate }: ResultsTabsProps) {
   const [activeTab, setActiveTab] = useState<string>(TABS[0])
-  const [content, setContent] = useState<Record<string, Record<string, TabContent>>>({})
+  const [content, setContent] = useState<TabData>(() => 
+    TABS.reduce((acc, tab) => {
+      acc[tab] = { Global: { text: "Loading...", score: 0 } }
+      return acc
+    }, {} as TabData)
+  )
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -45,13 +57,13 @@ export function ResultsTabs({ selectedRegion, currentYear, currentQuery, onScore
   }, [selectedRegion, currentYear, currentQuery, onScoreUpdate])
 
   const getContent = (tab: string): TabContent => {
-    const tabContent = content[tab as keyof typeof content] || {}
+    const tabContent = content[tab] || {}
+    const regionData = selectedRegion ? tabContent[selectedRegion] : tabContent.Global
     
-    if (!selectedRegion) {
-      return tabContent.Global || { text: "Global data not available", score: 0 }
+    return regionData || { 
+      text: selectedRegion ? "No regional data available" : "Global data not available",
+      score: 0
     }
-    
-    return tabContent[selectedRegion] || { text: "No regional data available", score: 0 }
   }
 
   return (

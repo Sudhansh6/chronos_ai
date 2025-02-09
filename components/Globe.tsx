@@ -1,103 +1,121 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { Viewer, CameraFlyTo, Entity, ImageryLayer, createWorldTerrain, Cartesian3, Rectangle } from "cesium"
-import "cesium/Build/Cesium/Widgets/widgets.css"
-import { Button } from "@/components/ui/button"
-import { Cross1Icon } from "@radix-ui/react-icons"
+import Globe from "react-globe.gl"
 
 interface GlobeProps {
   selectedRegion: string | null
   onRegionSelect: (region: string) => void
 }
 
-const REGION_BOUNDS = {
-  "Asia": { west: 30, east: 180, south: -10, north: 60 },
-  "North America": { west: -170, east: -50, south: 15, north: 80 },
-  "Europe": { west: -25, east: 60, south: 35, north: 70 },
-  "Africa": { west: -20, east: 50, south: -35, north: 35 }
+const REGIONS = {
+  Eurasia: { lat: 45, lng: 90, color: "#4CAF50" },
+  "North America": { lat: 40, lng: -100, color: "#2196F3" },
+  "South America": { lat: -15, lng: -60, color: "#FFC107" },
+  "Africa/Oceania": { lat: 0, lng: 25, color: "#FF5722" },
 }
 
 export default function GlobeComponent({ selectedRegion, onRegionSelect }: GlobeProps) {
-  const cesiumContainer = useRef<HTMLDivElement>(null)
-  const viewerRef = useRef<Viewer>()
-  const [resolution, setResolution] = useState(0.5)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const globeRef = useRef<any>()
+  const [dimensions, setDimensions] = useState({ width: 800, height: 600 })
 
   useEffect(() => {
-    if (cesiumContainer.current && !viewerRef.current) {
-      viewerRef.current = new Viewer(cesiumContainer.current, {
-        animation: false,
-        baseLayerPicker: false,
-        fullscreenButton: false,
-        geocoder: false,
-        homeButton: false,
-        infoBox: false,
-        sceneModePicker: false,
-        selectionIndicator: false,
-        timeline: false,
-        navigationHelpButton: false,
-        terrain: createWorldTerrain(),
-        imageryProvider: new IonImageryProvider({ assetId: 2 })
-      })
-
-      // Configure initial view
-      viewerRef.current.camera.flyTo({
-        destination: Cartesian3.fromDegrees(0, 30, 10000000),
-        orientation: {
-          heading: 0,
-          pitch: -Math.PI/4,
-          roll: 0
-        }
-      })
+    const updateDimensions = () => {
+      if (containerRef.current) {
+        const { width, height } = containerRef.current.getBoundingClientRect()
+        setDimensions({ width, height })
+      }
     }
 
-    return () => {
-      viewerRef.current?.destroy()
-    }
+    window.addEventListener("resize", updateDimensions)
+    updateDimensions()
+
+    return () => window.removeEventListener("resize", updateDimensions)
   }, [])
 
-  useEffect(() => {
-    if (selectedRegion && viewerRef.current) {
-      const bounds = REGION_BOUNDS[selectedRegion]
-      viewerRef.current.camera.flyTo({
-        destination: Rectangle.fromDegrees(
-          bounds.west,
-          bounds.south,
-          bounds.east,
-          bounds.north
-        )
-      })
-    }
-  }, [selectedRegion])
-
   const handleGlobeClick = (coords: { lat: number; lng: number }) => {
-    const clickedRegion = Object.entries(REGION_BOUNDS).find(([_, region]) => 
-      coords.lng >= region.west && coords.lng <= region.east &&
-      coords.lat >= region.south && coords.lat <= region.north
-    )?.[0];
+    let closestRegion = ""
+    let minDistance = Number.POSITIVE_INFINITY
 
-    if (clickedRegion) {
-      onRegionSelect(clickedRegion);
-    }
+    Object.entries(REGIONS).forEach(([region, pos]) => {
+      const distance = Math.sqrt(Math.pow(coords.lat - pos.lat, 2) + Math.pow(coords.lng - pos.lng, 2))
+      if (distance < minDistance) {
+        minDistance = distance
+        closestRegion = region
+      }
+    })
+
+    onRegionSelect(closestRegion)
   }
 
+  const polygons = selectedRegion
+    ? [
+        {
+          coordinates: getRegionCoordinates(selectedRegion),
+          color: REGIONS[selectedRegion as keyof typeof REGIONS].color,
+        },
+      ]
+    : []
+
   return (
-    <div 
-      ref={cesiumContainer} 
-      className="w-full h-[calc(100vh-160px)] md:h-full relative"
-    >
-      {selectedRegion && (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="absolute top-4 right-4 z-10 bg-white/5 hover:bg-white/10 text-white/80 hover:text-white"
-          onClick={() => onRegionSelect(null)}
-        >
-          <Cross1Icon className="mr-2" />
-          Exit Region View
-        </Button>
-      )}
+    <div ref={containerRef} className="w-full h-full">
+      <Globe
+        ref={globeRef}
+        width={dimensions.width}
+        height={dimensions.height}
+        globeImageUrl="//unpkg.com/three-globe/example/img/earth-blue-marble.jpg"
+        bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
+        backgroundImageUrl="//unpkg.com/three-globe/example/img/night-sky.png"
+        polygonsData={polygons}
+        polygonCapColor={(d) => d.color}
+        polygonSideColor={() => "rgba(0, 100, 0, 0.15)"}
+        polygonStrokeColor={() => "#111"}
+        polygonAltitude={0.01}
+        onGlobeClick={handleGlobeClick}
+        atmosphereColor="white"
+        atmosphereAltitude={0.15}
+      />
     </div>
   )
+}
+
+function getRegionCoordinates(region: string) {
+  const coordinates = {
+    Eurasia: [
+      [
+        [30, 60],
+        [180, 60],
+        [180, 0],
+        [30, 0],
+      ],
+    ],
+    "North America": [
+      [
+        [-180, 80],
+        [-50, 80],
+        [-50, 15],
+        [-180, 15],
+      ],
+    ],
+    "South America": [
+      [
+        [-80, 15],
+        [-35, 15],
+        [-35, -60],
+        [-80, -60],
+      ],
+    ],
+    "Africa/Oceania": [
+      [
+        [-20, 35],
+        [180, 35],
+        [180, -60],
+        [-20, -60],
+      ],
+    ],
+  }
+
+  return coordinates[region as keyof typeof coordinates] || []
 }
 

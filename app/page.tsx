@@ -8,6 +8,7 @@ import { Timeline } from "@/types"
 import { ProcessedTimelineData } from "@/types"
 import { ChatWindow } from "../components/ChatWindow"
 import { Chat } from "../components/Chat"
+import { GlobeComponent } from "../components/Globe"
 
 export default function HomePage() {
   const [summaryData, setSummaryData] = useState<ProcessedTimelineData>()
