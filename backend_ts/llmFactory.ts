@@ -1,4 +1,6 @@
 import { CreateMLCEngine, MLCEngineInterface, MLCEngineWorkerHandler } from "@mlc-ai/web-llm";
+import { OpenAI } from "@langchain/openai";
+import { ChatPromptTemplate } from "@langchain/core/prompts";
 
 // Define the model name as a constant
 const MODEL_NAME = "RedPajama-INCITE-Chat-3B-v1-q4f16_1-MLC";
@@ -10,6 +12,31 @@ interface LLMProvider {
     temperature?: number;
   }): Promise<string>;
 }
+
+// Create an OpenAI instance as per the official LangChain JS usage.
+const openaiLLM = new OpenAI({
+  model: "gpt-4o-mini",
+  temperature: 0.7,
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+// OpenAI provider using LangChain official usage.
+const openaiProvider: LLMProvider = {
+  async generateResponse({ systemPrompt, userInput, temperature = 0.7 }) {
+    // Combine system prompt and user input
+    const promptTemplate = ChatPromptTemplate.fromMessages([
+      ["system", systemPrompt],
+      ["user", "{input}"],
+    ]);
+
+    // Format the template with the provided user input.
+    const prompt = await promptTemplate.format({ input: userInput });
+    
+    // Call the OpenAI instance using the official syntax.
+    const response = await openaiLLM.invoke(prompt);
+    return response.trim();
+  },
+};
 
 // WebLLM implementation
 const webllmProvider: LLMProvider = {
@@ -37,27 +64,6 @@ const webllmProvider: LLMProvider = {
 };
 
 // Keep other providers commented but available
-
-const openaiProvider: LLMProvider = {
-  async generateResponse({ systemPrompt, userInput, temperature = 0.7 }) {
-    const { OpenAI } = require("openai");
-    const client = new OpenAI({
-      apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
-      dangerouslyAllowBrowser: true
-    });
-
-    const response = await client.chat.completions.create({
-      model: "gpt-4o-mini",
-      temperature,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userInput }
-      ]
-    });
-
-    return response.choices[0].message?.content || "";
-  }
-};
 
 // const anthropicProvider: LLMProvider = {
 //   async generateResponse({ systemPrompt, userInput, temperature = 0.7 }) {
