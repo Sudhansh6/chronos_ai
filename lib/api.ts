@@ -38,17 +38,23 @@ export interface ProcessedTimelineData {
 }
 
 export class ApiService {
+  private useMockData = process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true';
+
   private async mockFetch<T>(data: T): Promise<T> {
     await new Promise((resolve) => setTimeout(resolve, MOCK_API_DELAY))
     return data
   }
 
   private processTimelineData(result: any): ProcessedTimelineData {
-    const normalizeRegion = (region: string) => 
-      region.toLowerCase() === 'global' ? 'Global' : 
-      region.charAt(0).toUpperCase() + region.slice(1).toLowerCase();
+    const normalizeRegion = (region: string) => {
+      if (region.toLowerCase() === 'global') return 'Global';
+      return region
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+    };
 
-    // Process future events
+    // Process future events with proper location handling
     const futureEvents = result.future_events.reduce((acc, event) => {
       const region = normalizeRegion(event.location);
       acc[region] = acc[region] || [];
@@ -57,27 +63,29 @@ export class ApiService {
     }, {} as Record<string, string[]>);
 
     const processedFutureEvents = Object.entries(futureEvents).reduce((acc, [region, events]) => {
-      acc[normalizeRegion(region)] = {
+      acc[region] = {
         text: events.join('\n'),
         score: 0
       };
       return acc;
     }, {} as Record<string, RegionData>);
 
-    // Process regional quantities
+    // Process regional quantities with proper casing
     const regionalQuantities = Object.entries(result.regional_quantities).reduce((acc, [region, scores]) => {
-      const normalized = region === "GLOBAL" ? "Global" : normalizeRegion(region);
-      acc[normalized] = scores as Record<string, number>;
+      acc[normalizeRegion(region)] = scores as Record<string, number>;
       return acc;
     }, {} as Record<string, Record<string, number>>);
 
-    // Calculate scores
+    // Calculate scores with proper region matching
     return {
       content: {
         "Overview": Object.entries(result.global_story).reduce((acc, [region, text]) => {
-          acc[normalizeRegion(region)] = {
+          const normalizedRegion = normalizeRegion(region);
+          const quantities = regionalQuantities[normalizedRegion] || {};
+          
+          acc[normalizedRegion] = {
             text: text as string,
-            score: Math.round(Object.values(regionalQuantities[normalizeRegion(region)] || {}).reduce((a, b) => a + b, 0) / 4)
+            score: Math.round(Object.values(quantities).reduce((a, b) => a + b, 0) / Object.values(quantities).length || 0)
           };
           return acc;
         }, {} as Record<string, RegionData>),
@@ -94,19 +102,24 @@ export class ApiService {
     };
   }
 
-  async getTimelineData(timeline: Timeline): Promise<ProcessedTimelineData> {
+  async getTimelineData(params: Timeline): Promise<ProcessedTimelineData> {
+    if (this.useMockData) {
+      console.log(this.processTimelineData(MOCK_DATA2));
+      return this.mockFetch(this.processTimelineData(MOCK_DATA2));
+    }
+
     try {
       const result = await backend.simulateYear(
-        timeline.year.toString(),
+        params.year.toString(),
         undefined,
-        timeline.query
+        params.query
       );
       console.log("Fetched", result);
       const processedData = this.processTimelineData(result);
       console.log("Processed timeline data:", processedData);
       return processedData;
     } catch (error) {
-      console.error("Error processing timeline data:", error);
+      console.error("Error fetching timeline data:", error);
       return this.processTimelineData(MOCK_DATA2);
     }
   }

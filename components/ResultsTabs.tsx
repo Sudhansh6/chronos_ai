@@ -1,11 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Progress } from "@/components/ui/progress"
 import { motion } from "framer-motion"
 import { api, type TabContent } from "@/lib/api"
+import { useLocation } from "react-router-dom"
 
 const TABS = [
   "Overview",
@@ -20,6 +21,7 @@ interface ResultsTabsProps {
   currentYear: number
   currentQuery: string
   onScoreUpdate: (score: number) => void
+  initialData: { content: TabData }
 }
 
 interface TabData {
@@ -29,39 +31,14 @@ interface TabData {
   }
 }
 
-export function ResultsTabs({ selectedRegion, currentYear, currentQuery, onScoreUpdate }: ResultsTabsProps) {
+export function ResultsTabs({ selectedRegion, currentYear, currentQuery, onScoreUpdate, initialData }: ResultsTabsProps) {
   const [activeTab, setActiveTab] = useState<string>(TABS[0])
-  const [content, setContent] = useState<TabData>(() => 
-    TABS.reduce((acc, tab) => {
-      acc[tab] = { Global: { text: "Loading...", score: 0 } }
-      return acc
-    }, {} as TabData)
-  )
-  const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
-    const fetchInitialData = async () => {
-      try {
-        setIsLoading(true)
-        const initialData = await api.getTimelineData(
-          { year: currentYear, query: currentQuery },
-          selectedRegion
-        )
-        setContent(initialData.content)
-        onScoreUpdate(Math.round(initialData.totalScore))
-      } catch (error) {
-        console.error("Initial data fetch failed:", error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    fetchInitialData()
-  }, [])
+  const [content, setContent] = useState<TabData>(initialData.content)
 
   const getContent = (tab: string): TabContent => {
     const tabContent = content[tab] || {}
-    const regionData = selectedRegion ? tabContent[selectedRegion] : tabContent.Global
+    const normalizedRegion = selectedRegion?.replace(/_/g, ' ')
+    const regionData = selectedRegion ? tabContent[normalizedRegion] : tabContent.Global
     
     return regionData || { 
       text: selectedRegion ? "No regional data available" : "Global data not available",
@@ -94,13 +71,7 @@ export function ResultsTabs({ selectedRegion, currentYear, currentQuery, onScore
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3 }}
                   >
-                    {isLoading ? (
-                      <div className="h-20 bg-white/5 animate-pulse rounded" />
-                    ) : (
-                      <div className="whitespace-pre-line">
-                        {getContent(tab).text}
-                      </div>
-                    )}
+                    {getContent(tab).text}
                   </motion.div>
                   {tab !== "Future Events" && (
                     <div className="space-y-2">

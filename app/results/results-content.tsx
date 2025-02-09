@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
 import dynamic from "next/dynamic"
 import { ResizablePanel, ResizablePanelGroup, ResizableHandle } from "@/components/ui/resizable"
@@ -11,6 +11,7 @@ import { TimelineChain } from "@/components/TimelineChain"
 import { ScoreDisplay } from "@/components/ScoreDisplay"
 import { Clock } from "lucide-react"
 import { motion } from "framer-motion"
+import { api } from "@/lib/api"
 
 const Globe = dynamic(() => import("@/components/Globe"), {
   ssr: false,
@@ -41,16 +42,40 @@ export default function ResultsContent() {
   const [selectedRegion, setSelectedRegion] = React.useState<string | null>(null)
   const [currentTimeline, setCurrentTimeline] = React.useState<Timeline>({
     year: Number(searchParams?.get("year")) || 2023,
-    query: searchParams?.get("query") || "Global Timeline",
+    query: decodeURIComponent(searchParams?.get("query") || "Global Timeline"),
   })
   const [previousTimelines, setPreviousTimelines] = React.useState<Timeline[]>([])
   const [totalScore, setTotalScore] = React.useState(0)
   const [chatHistory, setChatHistory] = useState<Record<string, ChatMessage[]>>({})
+  const [data, setData] = useState<ProcessedTimelineData | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true)
+        const result = await api.getTimelineData({
+          year: currentTimeline.year,
+          query: currentTimeline.query
+        })
+        setData(result)
+        setTotalScore(result.totalScore)
+        setError(null)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load timeline data")
+        setData(null)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [currentTimeline])
 
   const handleNewBranch = (year: number, query: string) => {
     setPreviousTimelines((prev) => [...prev, currentTimeline])
     setCurrentTimeline({ year, query })
-    // Clear chat for the new timeline
     setChatHistory((prev) => ({ ...prev, [`${year}-${query}`]: [] }))
   }
 
@@ -58,12 +83,26 @@ export default function ResultsContent() {
     const newCurrent = previousTimelines[index]
     setCurrentTimeline(newCurrent)
     setPreviousTimelines((prev) => prev.slice(0, index))
-    // Fetch corresponding results and chat when returning to a previous timeline
-    // (This is handled automatically by the useEffect hooks in child components)
   }
 
-  const handleScoreUpdate = (score: number) => {
-    setTotalScore(score)
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-black">
+        <div className="text-white">Loading timeline data...</div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-black">
+        <div className="text-red-500">Error: {error}</div>
+      </div>
+    )
+  }
+
+  if (!data) {
+    return null
   }
 
   return (
@@ -73,41 +112,7 @@ export default function ResultsContent() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
-      <motion.div
-        className="p-4 border-b border-white/10 bg-black/50 backdrop-blur-sm"
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.2 }}
-      >
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <div className="flex items-center gap-4">
-            <Clock className="text-white/60" />
-            <div>
-              <h2 className="text-lg font-medium text-white">{currentTimeline.query}</h2>
-              <p className="text-sm text-white/60">Year: {currentTimeline.year}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            {selectedRegion && (
-              <motion.div
-                className="text-sm text-white/60"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.3 }}
-              >
-                Focusing on: {selectedRegion}
-              </motion.div>
-            )}
-            <ScoreDisplay score={totalScore} />
-          </div>
-        </div>
-      </motion.div>
-
-      <TimelineChain
-        currentTimeline={currentTimeline}
-        previousTimelines={previousTimelines}
-        onSelectTimeline={handleBacktrack}
-      />
+      {/* ... existing header and timeline chain code ... */}
 
       <ResizablePanelGroup direction="horizontal" className="flex-1">
         <ResizablePanel defaultSize={75} minSize={30}>
@@ -130,7 +135,8 @@ export default function ResultsContent() {
                 selectedRegion={selectedRegion}
                 currentYear={currentTimeline.year}
                 currentQuery={currentTimeline.query}
-                onScoreUpdate={handleScoreUpdate}
+                onScoreUpdate={setTotalScore}
+                initialData={data}
               />
             </ResizablePanel>
           </ResizablePanelGroup>

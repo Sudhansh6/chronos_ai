@@ -51,10 +51,10 @@ export function SearchBar() {
     }
   }, [query])
 
-  const handleSearch = (e?: React.FormEvent) => {
-    e?.preventDefault()
+  const handleSearch = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     if (query.trim() || pivotalYear) {
-      router.push(`/results?year=${pivotalYear}&query=${encodeURIComponent(query || "default query")}`)
+      router.push(`/results?year=${pivotalYear}&query=${encodeURIComponent(query || "default query")}`);
     }
   }
 
@@ -64,7 +64,7 @@ export function SearchBar() {
     document.body.appendChild(ripple)
 
     const rect = event.currentTarget.getBoundingClientRect()
-    const size = 1000
+    const size = 100
     ripple.style.width = ripple.style.height = `${size}px`
     ripple.style.left = `${event.clientX - size / 2}px`
     ripple.style.top = `${event.clientY - size / 2}px`

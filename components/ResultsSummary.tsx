@@ -10,6 +10,8 @@ interface ResultsSummaryProps {
 }
 
 export function ResultsSummary({ selectedTab, setSelectedTab, summaryData, selectedRegion }: ResultsSummaryProps) {
+  const normalizeRegion = (region: string) => region.replace(/_/g, ' ');
+
   return (
     <div className="h-1/5 bg-muted p-4 overflow-y-auto">
       <h2 className="text-2xl font-semibold text-white mb-4">Results Summary</h2>
@@ -31,10 +33,10 @@ export function ResultsSummary({ selectedTab, setSelectedTab, summaryData, selec
       <div className="text-gray-300">
         {selectedRegion ? (
           <>
-            <h3 className="text-lg font-semibold mb-2">{selectedRegion} - {selectedTab}</h3>
-            <p>{summaryData.content[selectedTab]?.[selectedRegion]?.text || "No regional data"}</p>
+            <h3 className="text-lg font-semibold mb-2">{normalizeRegion(selectedRegion)} - {selectedTab}</h3>
+            <p>{summaryData.content[selectedTab]?.[normalizeRegion(selectedRegion)]?.text || "No regional data"}</p>
             <div className="mt-2 text-sm text-accent">
-              {selectedTab} Score: {summaryData.content[selectedTab]?.[selectedRegion]?.score || 0}%
+              {selectedTab} Score: {summaryData.content[selectedTab]?.[normalizeRegion(selectedRegion)]?.score || 0}%
             </div>
           </>
         ) : (

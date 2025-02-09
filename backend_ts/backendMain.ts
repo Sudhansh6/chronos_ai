@@ -18,9 +18,9 @@ export class Backend {
     currentEvent?: string,
     userDecision?: string
   ): Promise<SimulationResult> {
-    if (!process.env.OPENAI_API_KEY) {
-      throw new Error("OPENAI_API_KEY environment variable is required");
-    }
+    // if (!process.env.OPENAI_API_KEY) {
+    //   throw new Error("OPENAI_API_KEY environment variable is required");
+    // }
 
     try {
       const result = await runSimulation(
