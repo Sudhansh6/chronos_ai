@@ -40,11 +40,13 @@ const webllmProvider: LLMProvider = {
 
 const openaiProvider: LLMProvider = {
   async generateResponse({ systemPrompt, userInput, temperature = 0.7 }) {
-    const { Configuration, OpenAIApi } = require("openai");
-    const config = new Configuration({ apiKey: process.env.OPENAI_API_KEY });
-    const openai = new OpenAIApi(config);
+    const { OpenAI } = require("openai");
+    const client = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+      dangerouslyAllowBrowser: true
+    });
 
-    const response = await openai.createChatCompletion({
+    const response = await client.chat.completions.create({
       model: "gpt-4",
       temperature,
       messages: [
@@ -53,7 +55,7 @@ const openaiProvider: LLMProvider = {
       ]
     });
 
-    return response.data.choices[0].message?.content || "";
+    return response.choices[0].message?.content || "";
   }
 };
 

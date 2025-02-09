@@ -18,16 +18,25 @@ export class Backend {
     currentEvent?: string,
     userDecision?: string
   ): Promise<SimulationResult> {
-    const result = await runSimulation(
-      year,
-      currentEvent || "The world stands on the brink of change...", 
-      userDecision || "No decision made yet."
-    );
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error("OPENAI_API_KEY environment variable is required");
+    }
 
-    this.historyDict.set(year, result);
-    this.currentYear = year;
-    
-    return result;
+    try {
+      const result = await runSimulation(
+        year,
+        currentEvent || "The world stands on the brink of change...", 
+        userDecision || "No decision made yet."
+      );
+
+      this.historyDict.set(year, result);
+      this.currentYear = year;
+      
+      return result;
+    } catch (error) {
+      console.error("Year simulation failed:", error);
+      throw new Error(`Failed to simulate year: ${error instanceof Error ? error.message : "Unknown error"}`);
+    }
   }
 
   async getEventsByYear(year: string): Promise<Record<string, string[]>> {

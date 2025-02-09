@@ -33,18 +33,16 @@ export function ResultsSummary({ selectedTab, setSelectedTab, summaryData, selec
           <>
             <h3 className="text-lg font-semibold mb-2">{selectedRegion} - {selectedTab}</h3>
             <p>{summaryData.content[selectedTab]?.[selectedRegion]?.text || "No regional data"}</p>
-            {selectedTab !== "Future Events" && (
-              <div className="mt-2 text-sm text-accent">
-                {selectedTab} Score: {summaryData.content[selectedTab]?.[selectedRegion]?.score || 0}
-              </div>
-            )}
+            <div className="mt-2 text-sm text-accent">
+              {selectedTab} Score: {summaryData.content[selectedTab]?.[selectedRegion]?.score || 0}%
+            </div>
           </>
         ) : (
           <div className="space-y-2">
             <h3 className="text-lg font-semibold">Global {selectedTab}</h3>
-            <p>{summaryData?.content[selectedTab]?.[selectedRegion || "Global"]?.text || "No data available"}</p>
+            <p>{summaryData?.content[selectedTab]?.Global?.text || "No data available"}</p>
             <div className="mt-2 text-sm text-accent">
-              {selectedTab} Score: {summaryData?.content[selectedTab]?.[selectedRegion || "Global"]?.score || 0}%
+              {selectedTab} Score: {summaryData?.content[selectedTab]?.Global?.score || 0}%
             </div>
           </div>
         )}

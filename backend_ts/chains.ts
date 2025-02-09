@@ -86,18 +86,23 @@ export async function runSimulation(
   currentEvent: string,
   userDecision: string
 ): Promise<SimulationResult> {
-  const historicalContext = await buildHistoricalContextChain(year);
-  const combinedInput = combineSimulationInputs(year, historicalContext, currentEvent, userDecision);
-  
-  const chain = buildSimulationChain();
-  const result = await chain.run({
-    combined: combinedInput,
-    historical_context: historicalContext
-  });
+  try {
+    const historicalContext = await buildHistoricalContextChain(year);
+    const combinedInput = combineSimulationInputs(year, historicalContext, currentEvent, userDecision);
+    
+    const chain = buildSimulationChain();
+    const result = await chain.run({
+      combined: combinedInput,
+      historical_context: historicalContext
+    });
 
-  const parsedResult = parseSimulationOutput(result.simulation_output);
-  latestSimulationResult = parsedResult;
-  return parsedResult;
+    const parsedResult = parseSimulationOutput(result.simulation_output);
+    latestSimulationResult = parsedResult;
+    return parsedResult;
+  } catch (error) {
+    console.error("Simulation failed:", error);
+    throw new Error(`Simulation error: ${error instanceof Error ? error.message : "Unknown error"}`);
+  }
 }
 
 export function parseSimulationOutput(output: string): SimulationResult {

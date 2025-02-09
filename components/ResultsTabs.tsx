@@ -40,21 +40,24 @@ export function ResultsTabs({ selectedRegion, currentYear, currentQuery, onScore
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchInitialData = async () => {
       try {
         setIsLoading(true)
-        const data = await api.getTimelineData({ year: currentYear, query: currentQuery }, selectedRegion)
-        setContent(data.content)
-        onScoreUpdate(Math.round(data.totalScore))
+        const initialData = await api.getTimelineData(
+          { year: currentYear, query: currentQuery },
+          selectedRegion
+        )
+        setContent(initialData.content)
+        onScoreUpdate(Math.round(initialData.totalScore))
       } catch (error) {
-        console.error("Error fetching timeline data:", error)
+        console.error("Initial data fetch failed:", error)
       } finally {
         setIsLoading(false)
       }
     }
 
-    fetchData()
-  }, [selectedRegion, currentYear, currentQuery, onScoreUpdate])
+    fetchInitialData()
+  }, [])
 
   const getContent = (tab: string): TabContent => {
     const tabContent = content[tab] || {}

@@ -101,7 +101,7 @@ export class ApiService {
         undefined,
         timeline.query
       );
-      
+      console.log("Fetched", result);
       const processedData = this.processTimelineData(result);
       console.log("Processed timeline data:", processedData);
       return processedData;
